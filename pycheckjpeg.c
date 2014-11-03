@@ -47,12 +47,31 @@
 
 /* Global error counter */
 int total_errors = 0;
+char * Errors[16];
 
 /* Custom error manager */
 struct my_error_mgr {
 	struct jpeg_error_mgr pub; /* "public" fields */
 	jmp_buf setjmp_buffer; /* for return to caller */
 };
+
+/* Function to insert an error message */
+void insertError(const char* message)
+{
+
+	/* Determine length of message */
+	int message_len = strlen(message);
+
+	/* Allocate memory to store message in array */
+	Errors[total_errors] = malloc(sizeof(char) * message_len);
+	memset(Errors[total_errors], 0x00, message_len);
+
+	/* Copy message to array */
+	strncpy(Errors[total_errors], message, message_len);
+
+	/* Increment errors count */
+	total_errors++;
+}
 
 /* Custom error struct */
 typedef struct my_error_mgr * my_error_ptr;
@@ -61,11 +80,12 @@ typedef struct my_error_mgr * my_error_ptr;
 METHODDEF(void)
 exit_method (j_common_ptr cinfo)
 {
-	/* Increment errors count */
-	total_errors++;
 
 	/* Gets the error pointer */
 	my_error_ptr myerr = (my_error_ptr) cinfo->err;
+
+	/* Display error message */
+	(*cinfo->err->output_message) (cinfo);
 
 	/* Restore the error environment */
 	longjmp(myerr->setjmp_buffer, 1);
@@ -75,10 +95,25 @@ exit_method (j_common_ptr cinfo)
 METHODDEF(void)
 output_method (j_common_ptr cinfo)
 {
+	/* Initialize buffer to store error message */
+	char buffer[JMSG_LENGTH_MAX];
+
+	/* Format error message */
+	(*cinfo->err->format_message) (cinfo, buffer);
+
+	/* Allocate memory to store message in array */
+	Errors[total_errors] = malloc(sizeof(char) * JMSG_LENGTH_MAX);
+	memset(Errors[total_errors], 0x00, JMSG_LENGTH_MAX);
+
+	/* Copy message to array */
+	strncpy(Errors[total_errors], buffer, JMSG_LENGTH_MAX);
+
+	/* Increment errors count */
+	total_errors++;
 }
 
 /* Function to verify integrity of a JPEG file */
-int validate_jpeg(const char* filepath)
+void validate_jpeg(const char* filepath)
 {
 	/* Reset the error counter */
 	total_errors = 0;
@@ -92,7 +127,8 @@ int validate_jpeg(const char* filepath)
 
 	/* Try to open imput file */
 	if ((infile = fopen(filepath, "rb")) == NULL) {
-		return -1;
+		insertError("Cannot open input file");
+		return;
 	}
 
 	/* We set up the normal JPEG error routines, then override error_exit and output_message. */
@@ -114,7 +150,7 @@ int validate_jpeg(const char* filepath)
 		jpeg_destroy_decompress(&cinfo);
 		fclose(infile);
 
-		return total_errors;
+		return;
 	}
 
 	/* Now we can initialize the JPEG decompression object. */
@@ -158,11 +194,11 @@ int validate_jpeg(const char* filepath)
 	fclose(infile);
 
 	/* Return result (Ok) */
-	return 0;
+	return;
 }
 
 /* Function to verify integrity of a JPEG file from buffer */
-int validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
+void validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 {
 
 	/* Reset the error counter */
@@ -192,7 +228,7 @@ int validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 		*/
 		jpeg_destroy_decompress(&cinfo);
 
-		return total_errors;
+		return;
 	}
 
 	/* Now we can initialize the JPEG decompression object. */
@@ -233,9 +269,28 @@ int validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 	jpeg_destroy_decompress(&cinfo);
 
 	/* Return result (Ok) */
-	return 0;
+	return;
 }
 
+/* Function to create a python list object from a C char* list */
+PyObject * makelist(char* array[], size_t size) {
+
+	/* Create new python object */
+	PyObject *l = PyList_New(size);
+
+	/* Loop index */
+	size_t i = 0;
+
+	/* Iterate over elements */
+	for (i = 0; i != size; ++i) {
+
+		/* Insert item into list */
+		PyList_SET_ITEM(l, i, PyString_FromString(array[i]));
+	}
+
+	/* Return result */
+	return l;
+}
 
 /* The module doc string */
 PyDoc_STRVAR(pycheckjpeg__doc__,
@@ -260,10 +315,11 @@ py_validate_jpeg(PyObject *self, PyObject *args)
 		return NULL;
 
 	/* Validate image */
-	int errors = validate_jpeg(path);
+	validate_jpeg(path);
+	PyObject * errors = makelist(Errors, total_errors);
 
 	/* Return result */
-	return PyInt_FromLong((long) errors);
+	return errors;
 }
 
 /* The wrapper to the underlying C function for validate_jpeg_from_buffer */
@@ -279,10 +335,11 @@ py_validate_jpeg_from_buffer(PyObject *self, PyObject *args)
 		return NULL;
 
 	/* Validate image */
-	int errors = validate_jpeg_from_buffer(buffer, length);
+	validate_jpeg_from_buffer(buffer, length);
+	PyObject * errors = makelist(Errors, total_errors);
 
 	/* Return result */
-	return PyInt_FromLong((long) errors);
+	return errors;
 }
 
 /* Internal python methods bindings */
