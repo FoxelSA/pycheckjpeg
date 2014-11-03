@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+  pycheckjpeg - A python module to check integrity of JPEG files
+
+  Copyright (c) 2014 FOXEL SA - http://foxel.ch
+  Please read <http://foxel.ch/license> for more information.
+
+
+  Author(s):
+
+       Kevin Velickovic <k.velickovic@foxel.ch>
+
+
+  This file is part of the FOXEL project <http://foxel.ch>.
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  Additional Terms:
+
+       You are required to preserve legal notices and author attributions in
+       that material or in the Appropriate Legal Notices displayed by works
+       containing it.
+
+       You are required to attribute the work as explained in the "Usage and
+       Attribution" section of <http://foxel.ch/license>.
+"""
+
+# Imports
+import os
+import sys
+
+from pycheckjpeg import validate_jpeg
+
+# Program entry point function
+def main(argv):
+    
+    if len(sys.argv) <= 1:
+        print("Usage: %s <filename>" % os.path.basename(sys.argv[0]))
+        sys.exit(0)
+
+    # Check image
+    errors = validate_jpeg(sys.argv[1])
+
+    # Check if image is corupted
+    if errors:
+
+        # Display error messages
+        print("= Image corrupted =")
+
+        for err in errors:
+            print(err)
+    else:
+        print("= Tests passed =")
+
+
+# Program entry point
+if __name__ == "__main__":
+    main(sys.argv[1:])
