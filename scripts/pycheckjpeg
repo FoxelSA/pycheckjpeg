@@ -48,6 +48,7 @@ from pycheckjpeg import validate_jpeg
 # Program entry point function
 def main(argv):
     
+    # Check arguments
     if len(sys.argv) <= 1:
         print("Usage: %s <filename>" % os.path.basename(sys.argv[0]))
         sys.exit(0)
