@@ -3,6 +3,41 @@
 
 pycheckjpeg can validate a JPEG file from a buffer or a path, it returns 0 if the file is valid, else the error count (>0)
 
+### Installation
+
+Open a terminal and type the following commands
+
+    python setup.py build
+    sudo python setup.py install
+    
+### Usage examples
+
+```python
+from pycheckjpeg import validate_jpeg
+
+valid = validate_jpeg('file.jpeg')
+
+if valid == 0:
+    print("Tests passed")
+else:
+    print("Image is corrupted")
+
+```
+
+
+```python
+from pycheckjpeg import validate_jpeg_from_buffer
+
+with open('file.jpeg', 'rb') as image:
+    image_data = image.read()
+    valid = validate_jpeg_from_buffer(image_data, len(image_data))
+    
+    if valid == 0:
+        print("Tests passed")
+    else:
+        print("Image is corrupted")
+
+```
 
 ### Copyright
 
