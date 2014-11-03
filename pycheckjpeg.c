@@ -238,7 +238,7 @@ int validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 
 
 /* The module doc string */
-PyDoc_STRVAR(checkjpeg__doc__,
+PyDoc_STRVAR(pycheckjpeg__doc__,
 "A jpeg file checker");
 
 /* The functions doc strings */
@@ -286,7 +286,7 @@ py_validate_jpeg_from_buffer(PyObject *self, PyObject *args)
 }
 
 /* Internal python methods bindings */
-static PyMethodDef checkjpeg_methods[] = {
+static PyMethodDef pycheckjpeg_methods[] = {
 	{"validate_jpeg",  py_validate_jpeg, METH_VARARGS, validate_jpeg__doc__},
 	{"validate_jpeg_from_buffer",  py_validate_jpeg_from_buffer, METH_VARARGS, validate_jpeg_from_buffer__doc__},
 	{NULL, NULL}      /* sentinel */
@@ -294,10 +294,10 @@ static PyMethodDef checkjpeg_methods[] = {
 
 /* Internal python module initializer */
 PyMODINIT_FUNC
-initcheckjpeg(void)
+initpycheckjpeg(void)
 {
 
 	/* Initialize module */
-	Py_InitModule3("checkjpeg", checkjpeg_methods,
-                   checkjpeg__doc__);
+	Py_InitModule3("pycheckjpeg", pycheckjpeg_methods,
+                   pycheckjpeg__doc__);
 }
