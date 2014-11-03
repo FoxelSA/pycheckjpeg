@@ -3,6 +3,13 @@
 
 pycheckjpeg can validate a JPEG file from a buffer or a path, it returns an empty table ( [] ) if the file is valid, else all the error messages in a table
 
+### Dependencies
+
+ _libjpeg-dev_
+
+    sudo apt-get install libjpeg-dev
+    
+
 ### Installation
 
 Open a terminal and type the following commands
