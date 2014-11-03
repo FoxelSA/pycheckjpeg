@@ -15,12 +15,15 @@ Open a terminal and type the following commands
 ```python
 from pycheckjpeg import validate_jpeg
 
-valid = validate_jpeg('file.jpeg')
+errors = validate_jpeg('file.jpeg')
 
-if valid == 0:
-    print("Tests passed")
+if errors:
+    print("Image corrupted: ")
+    
+    for err in errors:
+        print(err)
 else:
-    print("Image is corrupted")
+    print("Tests passed")
 
 ```
 
@@ -30,12 +33,15 @@ from pycheckjpeg import validate_jpeg_from_buffer
 
 with open('file.jpeg', 'rb') as image:
     image_data = image.read()
-    valid = validate_jpeg_from_buffer(image_data, len(image_data))
+    errors = validate_jpeg_from_buffer(image_data, len(image_data))
     
-    if valid == 0:
-        print("Tests passed")
+    if errors:
+        print("Image corrupted: ")
+        
+        for err in errors:
+            print(err)
     else:
-        print("Image is corrupted")
+        print("Tests passed")
 
 ```
 
