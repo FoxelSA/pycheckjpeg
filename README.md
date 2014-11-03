@@ -3,6 +3,13 @@
 
 pycheckjpeg can validate a JPEG file from a buffer or a path, it returns 0 if the file is valid, else the error count (>0)
 
+### Installation
+
+Open a terminal and type the following commands
+
+    python setup.py build
+    sudo python setup.py install
+
 
 ### Copyright
 
