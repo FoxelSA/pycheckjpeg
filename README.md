@@ -20,9 +20,9 @@ Open a terminal and type the following commands
 ### Usage examples
 
 ```python
-from pycheckjpeg import validate_jpeg
+from pycheckjpeg import validate_jpeg_from_file
 
-errors = validate_jpeg('file.jpeg')
+errors = validate_jpeg_from_file('file.jpeg')
 
 if errors:
     print("Image corrupted: ")
