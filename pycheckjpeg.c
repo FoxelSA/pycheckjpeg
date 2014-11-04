@@ -55,6 +55,8 @@ struct my_error_mgr {
 	jmp_buf setjmp_buffer; /* for return to caller */
 };
 
+struct my_error_mgr jerr;
+
 /* Function to insert an error message */
 void insertError(const char* message)
 {
@@ -112,101 +114,14 @@ output_method (j_common_ptr cinfo)
 	total_errors++;
 }
 
-/* Function to verify integrity of a JPEG file */
-void validate_jpeg(const char* filepath)
-{
-	/* Reset the error counter */
-	total_errors = 0;
-
-	/* Scope variables */
-	struct jpeg_decompress_struct cinfo;
-	struct my_error_mgr jerr;
-	FILE * infile;
-	JSAMPARRAY buffer;
-	int row_stride;
-
-	/* Try to open imput file */
-	if ((infile = fopen(filepath, "rb")) == NULL) {
-		insertError("Cannot open input file");
-		return;
-	}
-
-	/* We set up the normal JPEG error routines, then override error_exit and output_message. */
-	cinfo.err = jpeg_std_error(&jerr.pub);
-	jerr.pub.error_exit = exit_method;
-	jerr.pub.output_message = output_method;
-
-	/* Speed optimisations */
-	cinfo.out_color_space = JCS_GRAYSCALE;
-	cinfo.scale_denom = 8;
-	cinfo.scale_num = 1;
-
-	/* Establish the setjmp return context for my_error_exit to use. */
-	if (setjmp(jerr.setjmp_buffer)) {
-
-		/* If we get here, the JPEG code has signaled an error.
-		* We need to clean up the JPEG object, close the input file, and return.
-		*/
-		jpeg_destroy_decompress(&cinfo);
-		fclose(infile);
-
-		return;
-	}
-
-	/* Now we can initialize the JPEG decompression object. */
-	jpeg_create_decompress(&cinfo);
-
-	/* specify data source (eg, a file) */
-	jpeg_stdio_src(&cinfo, infile);
-
-	/* read file parameters with jpeg_read_header() */
-	(void) jpeg_read_header(&cinfo, TRUE);
-
-	/* Start decompressor */
-	(void) jpeg_start_decompress(&cinfo);
-
-	/* JSAMPLEs per row in output buffer */
-	row_stride = cinfo.output_width * cinfo.output_components;
-
-	/* Make a one-row-high sample array that will go away when done with image */
-	buffer = (*cinfo.mem->alloc_sarray)
-	((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
-
-	/* Here we use the library's state variable cinfo.output_scanline as the
-	* loop counter, so that we don't have to keep track ourselves.
-	*/
-	while (cinfo.output_scanline < cinfo.output_height) {
-
-		/* jpeg_read_scanlines expects an array of pointers to scanlines.
-		* Here the array is only one element long, but you could ask for
-		* more than one scanline at a time if that's more convenient.
-		*/
-		(void) jpeg_read_scanlines(&cinfo, buffer, 1);
-	}
-
-	/* Finish decompression */
-	(void) jpeg_finish_decompress(&cinfo);
-
-	/* Release JPEG decompression object */
-	jpeg_destroy_decompress(&cinfo);
-
-	/* Close input file */
-	fclose(infile);
-
-	/* Return result (Ok) */
-	return;
-}
-
 /* Function to verify integrity of a JPEG file from buffer */
 void validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 {
-
 	/* Reset the error counter */
 	total_errors = 0;
 
 	/* Scope variables */
-	struct jpeg_decompress_struct cinfo;
-	struct my_error_mgr jerr;
+	struct jpeg_decompress_struct cinfo = {0};
 	JSAMPARRAY buffer;
 	int row_stride;
 
@@ -235,7 +150,7 @@ void validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 	jpeg_create_decompress(&cinfo);
 
 	/* specify data source (eg, a file) */
-	jpeg_mem_src(&cinfo, in_buffer, in_length);
+	jpeg_mem_src(&cinfo, in_buffer, (long unsigned int)in_length);
 
 	/* read file parameters with jpeg_read_header() */
 	(void) jpeg_read_header(&cinfo, TRUE);
@@ -297,26 +212,61 @@ PyDoc_STRVAR(pycheckjpeg__doc__,
 "A jpeg file checker");
 
 /* The functions doc strings */
-PyDoc_STRVAR(validate_jpeg__doc__,
-"Function to check validity of a JPEG file");
+PyDoc_STRVAR(validate_jpeg_from_file__doc__,
+"Function to check validity of a JPEG file from file");
 
 PyDoc_STRVAR(validate_jpeg_from_buffer__doc__,
-"Function to check validity of a JPEG file");
+"Function to check validity of a JPEG file from buffer");
 
 /* The wrapper to the underlying C function of validate_jpeg */
 static PyObject *
-py_validate_jpeg(PyObject *self, PyObject *args)
+py_validate_jpeg_from_file(PyObject *self, PyObject *args)
 {
 	/* Arguments containers */
 	char* path = "";
 
 	/* Try to parse arguments */
-	if (!PyArg_ParseTuple(args, "s:validate_jpeg", &path))
+	if (!PyArg_ParseTuple(args, "s:validate_jpeg_from_file", &path))
 		return NULL;
 
+	/* File variables */
+	FILE *file;
+	unsigned char *buffer;
+	unsigned long fileLen;
+
+	/* Open file */
+	file = fopen(path, "rb");
+	if (!file)
+	{
+		fprintf(stderr, "Unable to open file %s", path);
+		return 0;
+	}
+
+	/* Get file length */
+	fseek(file, 0, SEEK_END);
+	fileLen=ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	/* Allocate memory */
+	buffer=(unsigned char *)malloc(fileLen+1);
+	if (!buffer)
+	{
+		fprintf(stderr, "Memory error!");
+        fclose(file);
+
+		return 0;
+	}
+
+	/* Read file contents into buffer */
+	if(fread(buffer, fileLen, 1, file));
+	fclose(file);
+
 	/* Validate image */
-	validate_jpeg(path);
+	validate_jpeg_from_buffer(buffer, fileLen);
 	PyObject * errors = makelist(Errors, total_errors);
+
+	/* Free file buffer */
+	free(buffer);
 
 	/* Return result */
 	return errors;
@@ -327,15 +277,15 @@ static PyObject *
 py_validate_jpeg_from_buffer(PyObject *self, PyObject *args)
 {
 	/* Arguments containers */
-	unsigned char* buffer;
-	int length = 0;
+	unsigned char * buffer;
+	int buffer_length = 0;
 
 	/* Try to parse arguments */
-	if (!PyArg_ParseTuple(args, "s#|i:validate_jpeg_from_buffer", &buffer, &length))
+	if (!PyArg_ParseTuple(args, "s#:validate_jpeg_from_buffer", &buffer, &buffer_length))
 		return NULL;
 
 	/* Validate image */
-	validate_jpeg_from_buffer(buffer, length);
+	validate_jpeg_from_buffer(buffer, buffer_length);
 	PyObject * errors = makelist(Errors, total_errors);
 
 	/* Return result */
@@ -344,7 +294,7 @@ py_validate_jpeg_from_buffer(PyObject *self, PyObject *args)
 
 /* Internal python methods bindings */
 static PyMethodDef pycheckjpeg_methods[] = {
-	{"validate_jpeg",  py_validate_jpeg, METH_VARARGS, validate_jpeg__doc__},
+	{"validate_jpeg_from_file",  py_validate_jpeg_from_file, METH_VARARGS, validate_jpeg_from_file__doc__},
 	{"validate_jpeg_from_buffer",  py_validate_jpeg_from_buffer, METH_VARARGS, validate_jpeg_from_buffer__doc__},
 	{NULL, NULL}      /* sentinel */
 };
