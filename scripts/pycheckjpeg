@@ -43,7 +43,7 @@
 import os
 import sys
 
-from pycheckjpeg import validate_jpeg
+from pycheckjpeg import validate_jpeg_from_file
 
 # Program entry point function
 def main(argv):
@@ -54,7 +54,7 @@ def main(argv):
         sys.exit(0)
 
     # Check image
-    errors = validate_jpeg(sys.argv[1])
+    errors = validate_jpeg_from_file(sys.argv[1])
 
     # Check if image is corupted
     if errors:
