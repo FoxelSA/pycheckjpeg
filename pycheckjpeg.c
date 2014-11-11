@@ -46,8 +46,9 @@
 #include <sys/stat.h>
 
 /* Global error counter */
-int total_errors = 0;
-char * Errors[16];
+int total_errors   = 0;
+int total_warnings = 0;
+char * Messages[2][16];
 
 /* Custom error manager */
 struct my_error_mgr {
@@ -57,22 +58,38 @@ struct my_error_mgr {
 
 struct my_error_mgr jerr;
 
-/* Function to insert an error message */
-void insertError(const char* message)
+/* Function to insert a message */
+void insertMessage(const char* message, int type)
 {
 
 	/* Determine length of message */
 	int message_len = strlen(message);
 
-	/* Allocate memory to store message in array */
-	Errors[total_errors] = malloc(sizeof(char) * message_len);
-	memset(Errors[total_errors], 0x00, message_len);
+	if(type == 0)
+	{
+		/* Allocate memory to store message in array */
+		Messages[0][total_errors] = malloc(sizeof(char) * JMSG_LENGTH_MAX);
+		memset(Messages[0][total_errors], 0x00, JMSG_LENGTH_MAX);
 
-	/* Copy message to array */
-	strncpy(Errors[total_errors], message, message_len);
+		/* Copy message to array */
+		strncpy(Messages[0][total_errors], message, message_len);
 
-	/* Increment errors count */
-	total_errors++;
+		/* Increment errors count */
+		total_errors++;
+
+	} else if(type == 1) {
+
+		/* Allocate memory to store message in array */
+		Messages[1][total_warnings] = malloc(sizeof(char) * JMSG_LENGTH_MAX);
+		memset(Messages[1][total_warnings], 0x00, JMSG_LENGTH_MAX);
+
+		/* Copy message to array */
+		strncpy(Messages[1][total_warnings], message, message_len);
+
+		/* Increment warnings count */
+		total_warnings++;
+	}
+
 }
 
 /* Custom error struct */
@@ -86,8 +103,14 @@ exit_method (j_common_ptr cinfo)
 	/* Gets the error pointer */
 	my_error_ptr myerr = (my_error_ptr) cinfo->err;
 
-	/* Display error message */
-	(*cinfo->err->output_message) (cinfo);
+	/* Initialize buffer to store error message */
+	char buffer[JMSG_LENGTH_MAX];
+
+	/* Format error message */
+	(*cinfo->err->format_message) (cinfo, buffer);
+
+	/* Insert error message */
+	insertMessage(buffer, 0);
 
 	/* Restore the error environment */
 	longjmp(myerr->setjmp_buffer, 1);
@@ -103,15 +126,8 @@ output_method (j_common_ptr cinfo)
 	/* Format error message */
 	(*cinfo->err->format_message) (cinfo, buffer);
 
-	/* Allocate memory to store message in array */
-	Errors[total_errors] = malloc(sizeof(char) * JMSG_LENGTH_MAX);
-	memset(Errors[total_errors], 0x00, JMSG_LENGTH_MAX);
-
-	/* Copy message to array */
-	strncpy(Errors[total_errors], buffer, JMSG_LENGTH_MAX);
-
-	/* Increment errors count */
-	total_errors++;
+	/* Insert warning message */
+	insertMessage(buffer, 1);
 }
 
 /* Function to verify integrity of a JPEG file from buffer */
@@ -187,24 +203,35 @@ void validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 	return;
 }
 
-/* Function to create a python list object from a C char* list */
-PyObject * makelist(char* array[], size_t size) {
+/* Function to convert messages into a python object */
+PyObject * createResults(char * array[2][16], size_t esize, size_t wsize) {
 
-	/* Create new python object */
-	PyObject *l = PyList_New(size);
+	/* Temp array object */
+	PyObject * temp;
 
-	/* Loop index */
-	size_t i = 0;
+	/* Result variable */
+	PyObject * result = PyList_New(2);
 
-	/* Iterate over elements */
-	for (i = 0; i != size; ++i) {
+	/* Loop counter */
+	int i = 0;
 
-		/* Insert item into list */
-		PyList_SET_ITEM(l, i, PyString_FromString(array[i]));
+	/* Add errors to results */
+	PyList_SET_ITEM(result, 0, temp = PyList_New(esize));
+
+	for(i = 0; i < esize; i++) {
+	    PyList_SET_ITEM(temp, i, PyString_FromString(Messages[0][i]));
+	}
+
+	/* Add warnings to results */
+	PyList_SET_ITEM(result, 1, temp = PyList_New(wsize));
+
+	i = 0;
+	for(i = 0; i < wsize; i++) {
+		PyList_SET_ITEM(temp, i, PyString_FromString(Messages[1][i]));
 	}
 
 	/* Return result */
-	return l;
+	return result;
 }
 
 /* The module doc string */
@@ -263,13 +290,15 @@ py_validate_jpeg_from_file(PyObject *self, PyObject *args)
 
 	/* Validate image */
 	validate_jpeg_from_buffer(buffer, fileLen);
-	PyObject * errors = makelist(Errors, total_errors);
+
+	/* Create results object */
+	PyObject * results = createResults(Messages, total_errors, total_warnings);
 
 	/* Free file buffer */
 	free(buffer);
 
 	/* Return result */
-	return errors;
+	return results;
 }
 
 /* The wrapper to the underlying C function for validate_jpeg_from_buffer */
@@ -286,10 +315,12 @@ py_validate_jpeg_from_buffer(PyObject *self, PyObject *args)
 
 	/* Validate image */
 	validate_jpeg_from_buffer(buffer, buffer_length);
-	PyObject * errors = makelist(Errors, total_errors);
+
+	/* Create results object */
+	PyObject * results = createResults(Messages, total_errors, total_warnings);
 
 	/* Return result */
-	return errors;
+	return results;
 }
 
 /* Internal python methods bindings */

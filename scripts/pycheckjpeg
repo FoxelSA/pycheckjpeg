@@ -47,25 +47,32 @@ from pycheckjpeg import validate_jpeg_from_file
 
 # Program entry point function
 def main(argv):
-    
+
     # Check arguments
     if len(sys.argv) <= 1:
         print("Usage: %s <filename>" % os.path.basename(sys.argv[0]))
         sys.exit(0)
-
+        
     # Check image
-    errors = validate_jpeg_from_file(sys.argv[1])
+    messages = validate_jpeg_from_file(sys.argv[1])
 
-    # Check if image is corupted
-    if errors:
+    # Check if image have errors
+    if messages[0]:
 
         # Display error messages
-        print("= Image corrupted =")
+        print("= Image %s have errors =" % sys.argv[1])
 
-        for err in errors:
+        for err in messages[0]:
             print(err)
-    else:
-        print("= Tests passed =")
+
+    # Check if image have warnings
+    if messages[1]:
+
+        # Display warning messages
+        print("= Image %s have warnings =" % sys.argv[1])
+
+        for warn in messages[1]:
+            print(warn)
 
 
 # Program entry point
