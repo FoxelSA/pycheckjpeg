@@ -1,14 +1,14 @@
 
 ## pycheckjpeg<br />A python module to check integrity of JPEG files
 
-pycheckjpeg can validate a JPEG file from a buffer or a path, it returns an empty table ( [] ) if the file is valid, else all the error messages in a table
+pycheckjpeg can validate a JPEG file from a buffer or a path, it returns error and warning messages if anything is found.
 
 ### Dependencies
 
  _libjpeg-dev_
 
     sudo apt-get install libjpeg-dev
-    
+
 
 ### Installation
 
@@ -16,21 +16,41 @@ Open a terminal and type the following commands
 
     python setup.py build
     sudo python setup.py install
-    
+
+### Data structure
+
+When you call pycheckjpeg functions it returns a two dimentional array with warning and error messages
+
+    [
+        [], # Error messages
+        []  # Warning messages
+    ]
+
 ### Usage examples
 
 ```python
 from pycheckjpeg import validate_jpeg_from_file
 
-errors = validate_jpeg_from_file('file.jpeg')
+# Verify image
+messages = validate_jpeg_from_file('file.jpeg')
 
-if errors:
-    print("Image corrupted: ")
-    
-    for err in errors:
+# Check if image have errors
+if messages[0]:
+
+    # Display error messages
+    print("Image have errors")
+
+    for err in messages[0]:
         print(err)
-else:
-    print("Tests passed")
+
+# Check if image have warnings
+if messages[1]:
+
+    # Display warning messages
+    print("Image have warnings")
+
+    for warn in messages[1]:
+        print(warn)
 
 ```
 
@@ -38,18 +58,32 @@ else:
 ```python
 from pycheckjpeg import validate_jpeg_from_buffer
 
+# Open file
 with open('file.jpeg', 'rb') as image:
-    image_data = image.read()
-    errors = validate_jpeg_from_buffer(image_data)
-    
-    if errors:
-        print("Image corrupted: ")
-        
-        for err in errors:
-            print(err)
-    else:
-        print("Tests passed")
 
+    # Read image data
+    image_data = image.read()
+
+    # Verify image
+    messages = validate_jpeg_from_buffer(image_data)
+
+    # Check if image have errors
+    if messages[0]:
+
+        # Display error messages
+        print("Image have errors")
+
+        for err in messages[0]:
+            print(err)
+
+    # Check if image have warnings
+    if messages[1]:
+
+        # Display warning messages
+        print("Image have warnings")
+
+        for warn in messages[1]:
+            print(warn)
 ```
 
 ### Copyright
