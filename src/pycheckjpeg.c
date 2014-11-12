@@ -1,5 +1,5 @@
 /*
- * pycheckjpeg - A python module to check integrity of JPEG files
+ * pycheckjpeg - Python module to check integrity of JP4/JPEG files
  *
  * Copyright (c) 2014 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
@@ -52,8 +52,8 @@ char * Messages[2][16];
 
 /* Custom error manager */
 struct my_error_mgr {
-	struct jpeg_error_mgr pub; /* "public" fields */
-	jmp_buf setjmp_buffer; /* for return to caller */
+    struct jpeg_error_mgr pub; /* "public" fields */
+    jmp_buf setjmp_buffer; /* for return to caller */
 };
 
 struct my_error_mgr jerr;
@@ -62,33 +62,33 @@ struct my_error_mgr jerr;
 void insertMessage(const char* message, int type)
 {
 
-	/* Determine length of message */
-	int message_len = strlen(message);
+    /* Determine length of message */
+    int message_len = strlen(message);
 
-	if(type == 0)
-	{
-		/* Allocate memory to store message in array */
-		Messages[0][total_errors] = malloc(sizeof(char) * JMSG_LENGTH_MAX);
-		memset(Messages[0][total_errors], 0x00, JMSG_LENGTH_MAX);
+    if(type == 0)
+    {
+        /* Allocate memory to store message in array */
+        Messages[0][total_errors] = malloc(sizeof(char) * JMSG_LENGTH_MAX);
+        memset(Messages[0][total_errors], 0x00, JMSG_LENGTH_MAX);
 
-		/* Copy message to array */
-		strncpy(Messages[0][total_errors], message, message_len);
+        /* Copy message to array */
+        strncpy(Messages[0][total_errors], message, message_len);
 
-		/* Increment errors count */
-		total_errors++;
+        /* Increment errors count */
+        total_errors++;
 
-	} else if(type == 1) {
+    } else if(type == 1) {
 
-		/* Allocate memory to store message in array */
-		Messages[1][total_warnings] = malloc(sizeof(char) * JMSG_LENGTH_MAX);
-		memset(Messages[1][total_warnings], 0x00, JMSG_LENGTH_MAX);
+        /* Allocate memory to store message in array */
+        Messages[1][total_warnings] = malloc(sizeof(char) * JMSG_LENGTH_MAX);
+        memset(Messages[1][total_warnings], 0x00, JMSG_LENGTH_MAX);
 
-		/* Copy message to array */
-		strncpy(Messages[1][total_warnings], message, message_len);
+        /* Copy message to array */
+        strncpy(Messages[1][total_warnings], message, message_len);
 
-		/* Increment warnings count */
-		total_warnings++;
-	}
+        /* Increment warnings count */
+        total_warnings++;
+    }
 
 }
 
@@ -100,138 +100,138 @@ METHODDEF(void)
 exit_method (j_common_ptr cinfo)
 {
 
-	/* Gets the error pointer */
-	my_error_ptr myerr = (my_error_ptr) cinfo->err;
+    /* Gets the error pointer */
+    my_error_ptr myerr = (my_error_ptr) cinfo->err;
 
-	/* Initialize buffer to store error message */
-	char buffer[JMSG_LENGTH_MAX];
+    /* Initialize buffer to store error message */
+    char buffer[JMSG_LENGTH_MAX];
 
-	/* Format error message */
-	(*cinfo->err->format_message) (cinfo, buffer);
+    /* Format error message */
+    (*cinfo->err->format_message) (cinfo, buffer);
 
-	/* Insert error message */
-	insertMessage(buffer, 0);
+    /* Insert error message */
+    insertMessage(buffer, 0);
 
-	/* Restore the error environment */
-	longjmp(myerr->setjmp_buffer, 1);
+    /* Restore the error environment */
+    longjmp(myerr->setjmp_buffer, 1);
 }
 
 /* Method to error output */
 METHODDEF(void)
 output_method (j_common_ptr cinfo)
 {
-	/* Initialize buffer to store error message */
-	char buffer[JMSG_LENGTH_MAX];
+    /* Initialize buffer to store error message */
+    char buffer[JMSG_LENGTH_MAX];
 
-	/* Format error message */
-	(*cinfo->err->format_message) (cinfo, buffer);
+    /* Format error message */
+    (*cinfo->err->format_message) (cinfo, buffer);
 
-	/* Insert warning message */
-	insertMessage(buffer, 1);
+    /* Insert warning message */
+    insertMessage(buffer, 1);
 }
 
 /* Function to verify integrity of a JPEG file from buffer */
 void validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 {
-	/* Reset the error counter */
-	total_errors = 0;
+    /* Reset the error counter */
+    total_errors = 0;
 
-	/* Scope variables */
-	struct jpeg_decompress_struct cinfo = {0};
-	JSAMPARRAY buffer;
-	int row_stride;
+    /* Scope variables */
+    struct jpeg_decompress_struct cinfo = {0};
+    JSAMPARRAY buffer;
+    int row_stride;
 
-	/* We set up the normal JPEG error routines, then override error_exit. */
-	cinfo.err = jpeg_std_error(&jerr.pub);
-	jerr.pub.error_exit = exit_method;
-	jerr.pub.output_message = output_method;
+    /* We set up the normal JPEG error routines, then override error_exit. */
+    cinfo.err = jpeg_std_error(&jerr.pub);
+    jerr.pub.error_exit = exit_method;
+    jerr.pub.output_message = output_method;
 
-	/* Speed optimisations */
-	cinfo.out_color_space = JCS_GRAYSCALE;
-	cinfo.scale_denom = 8;
-	cinfo.scale_num = 1;
+    /* Speed optimisations */
+    cinfo.out_color_space = JCS_GRAYSCALE;
+    cinfo.scale_denom = 8;
+    cinfo.scale_num = 1;
 
-	/* Establish the setjmp return context for my_error_exit to use. */
-	if (setjmp(jerr.setjmp_buffer)) {
+    /* Establish the setjmp return context for my_error_exit to use. */
+    if (setjmp(jerr.setjmp_buffer)) {
 
-		/* If we get here, the JPEG code has signaled an error.
-		* We need to clean up the JPEG object, close the input file, and return.
-		*/
-		jpeg_destroy_decompress(&cinfo);
+        /* If we get here, the JPEG code has signaled an error.
+        * We need to clean up the JPEG object, close the input file, and return.
+        */
+        jpeg_destroy_decompress(&cinfo);
 
-		return;
-	}
+        return;
+    }
 
-	/* Now we can initialize the JPEG decompression object. */
-	jpeg_create_decompress(&cinfo);
+    /* Now we can initialize the JPEG decompression object. */
+    jpeg_create_decompress(&cinfo);
 
-	/* specify data source (eg, a file) */
-	jpeg_mem_src(&cinfo, in_buffer, (long unsigned int)in_length);
+    /* specify data source (eg, a file) */
+    jpeg_mem_src(&cinfo, in_buffer, (long unsigned int)in_length);
 
-	/* read file parameters with jpeg_read_header() */
-	(void) jpeg_read_header(&cinfo, TRUE);
+    /* read file parameters with jpeg_read_header() */
+    (void) jpeg_read_header(&cinfo, TRUE);
 
-	/* Start decompressor */
-	(void) jpeg_start_decompress(&cinfo);
+    /* Start decompressor */
+    (void) jpeg_start_decompress(&cinfo);
 
-	/* JSAMPLEs per row in output buffer */
-	row_stride = cinfo.output_width * cinfo.output_components;
+    /* JSAMPLEs per row in output buffer */
+    row_stride = cinfo.output_width * cinfo.output_components;
 
-	/* Make a one-row-high sample array that will go away when done with image */
-	buffer = (*cinfo.mem->alloc_sarray)
-	((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+    /* Make a one-row-high sample array that will go away when done with image */
+    buffer = (*cinfo.mem->alloc_sarray)
+    ((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
 
-	/* Here we use the library's state variable cinfo.output_scanline as the
-	* loop counter, so that we don't have to keep track ourselves.
-	*/
-	while (cinfo.output_scanline < cinfo.output_height) {
+    /* Here we use the library's state variable cinfo.output_scanline as the
+    * loop counter, so that we don't have to keep track ourselves.
+    */
+    while (cinfo.output_scanline < cinfo.output_height) {
 
-		/* jpeg_read_scanlines expects an array of pointers to scanlines.
-		* Here the array is only one element long, but you could ask for
-		* more than one scanline at a time if that's more convenient.
-		*/
-		(void) jpeg_read_scanlines(&cinfo, buffer, 1);
-	}
+        /* jpeg_read_scanlines expects an array of pointers to scanlines.
+        * Here the array is only one element long, but you could ask for
+        * more than one scanline at a time if that's more convenient.
+        */
+        (void) jpeg_read_scanlines(&cinfo, buffer, 1);
+    }
 
-	/* Finish decompression */
-	(void) jpeg_finish_decompress(&cinfo);
+    /* Finish decompression */
+    (void) jpeg_finish_decompress(&cinfo);
 
-	/* Release JPEG decompression object */
-	jpeg_destroy_decompress(&cinfo);
+    /* Release JPEG decompression object */
+    jpeg_destroy_decompress(&cinfo);
 
-	/* Return result (Ok) */
-	return;
+    /* Return result (Ok) */
+    return;
 }
 
 /* Function to convert messages into a python object */
 PyObject * createResults(char * array[2][16], size_t esize, size_t wsize) {
 
-	/* Temp array object */
-	PyObject * temp;
+    /* Temp array object */
+    PyObject * temp;
 
-	/* Result variable */
-	PyObject * result = PyList_New(2);
+    /* Result variable */
+    PyObject * result = PyList_New(2);
 
-	/* Loop counter */
-	int i = 0;
+    /* Loop counter */
+    int i = 0;
 
-	/* Add errors to results */
-	PyList_SET_ITEM(result, 0, temp = PyList_New(esize));
+    /* Add errors to results */
+    PyList_SET_ITEM(result, 0, temp = PyList_New(esize));
 
-	for(i = 0; i < esize; i++) {
-	    PyList_SET_ITEM(temp, i, PyString_FromString(Messages[0][i]));
-	}
+    for(i = 0; i < esize; i++) {
+        PyList_SET_ITEM(temp, i, PyString_FromString(Messages[0][i]));
+    }
 
-	/* Add warnings to results */
-	PyList_SET_ITEM(result, 1, temp = PyList_New(wsize));
+    /* Add warnings to results */
+    PyList_SET_ITEM(result, 1, temp = PyList_New(wsize));
 
-	i = 0;
-	for(i = 0; i < wsize; i++) {
-		PyList_SET_ITEM(temp, i, PyString_FromString(Messages[1][i]));
-	}
+    i = 0;
+    for(i = 0; i < wsize; i++) {
+        PyList_SET_ITEM(temp, i, PyString_FromString(Messages[1][i]));
+    }
 
-	/* Return result */
-	return result;
+    /* Return result */
+    return result;
 }
 
 /* The module doc string */
@@ -249,85 +249,85 @@ PyDoc_STRVAR(validate_jpeg_from_buffer__doc__,
 static PyObject *
 py_validate_jpeg_from_file(PyObject *self, PyObject *args)
 {
-	/* Arguments containers */
-	char* path = "";
+    /* Arguments containers */
+    char* path = "";
 
-	/* Try to parse arguments */
-	if (!PyArg_ParseTuple(args, "s:validate_jpeg_from_file", &path))
-		return NULL;
+    /* Try to parse arguments */
+    if (!PyArg_ParseTuple(args, "s:validate_jpeg_from_file", &path))
+        return NULL;
 
-	/* File variables */
-	FILE *file;
-	unsigned char *buffer;
-	unsigned long fileLen;
+    /* File variables */
+    FILE *file;
+    unsigned char *buffer;
+    unsigned long fileLen;
 
-	/* Open file */
-	file = fopen(path, "rb");
-	if (!file)
-	{
-		fprintf(stderr, "Unable to open file %s", path);
-		return 0;
-	}
+    /* Open file */
+    file = fopen(path, "rb");
+    if (!file)
+    {
+        fprintf(stderr, "Unable to open file %s", path);
+        return 0;
+    }
 
-	/* Get file length */
-	fseek(file, 0, SEEK_END);
-	fileLen=ftell(file);
-	fseek(file, 0, SEEK_SET);
+    /* Get file length */
+    fseek(file, 0, SEEK_END);
+    fileLen=ftell(file);
+    fseek(file, 0, SEEK_SET);
 
-	/* Allocate memory */
-	buffer=(unsigned char *)malloc(fileLen+1);
-	if (!buffer)
-	{
-		fprintf(stderr, "Memory error!");
+    /* Allocate memory */
+    buffer=(unsigned char *)malloc(fileLen+1);
+    if (!buffer)
+    {
+        fprintf(stderr, "Memory error!");
         fclose(file);
 
-		return 0;
-	}
+        return 0;
+    }
 
-	/* Read file contents into buffer */
-	if(fread(buffer, fileLen, 1, file));
-	fclose(file);
+    /* Read file contents into buffer */
+    if(fread(buffer, fileLen, 1, file));
+    fclose(file);
 
-	/* Validate image */
-	validate_jpeg_from_buffer(buffer, fileLen);
+    /* Validate image */
+    validate_jpeg_from_buffer(buffer, fileLen);
 
-	/* Create results object */
-	PyObject * results = createResults(Messages, total_errors, total_warnings);
+    /* Create results object */
+    PyObject * results = createResults(Messages, total_errors, total_warnings);
 
-	/* Free file buffer */
-	free(buffer);
+    /* Free file buffer */
+    free(buffer);
 
-	/* Return result */
-	return results;
+    /* Return result */
+    return results;
 }
 
 /* The wrapper to the underlying C function for validate_jpeg_from_buffer */
 static PyObject *
 py_validate_jpeg_from_buffer(PyObject *self, PyObject *args)
 {
-	/* Arguments containers */
-	unsigned char * buffer;
-	int buffer_length = 0;
+    /* Arguments containers */
+    unsigned char * buffer;
+    int buffer_length = 0;
 
-	/* Try to parse arguments */
-	if (!PyArg_ParseTuple(args, "s#:validate_jpeg_from_buffer", &buffer, &buffer_length))
-		return NULL;
+    /* Try to parse arguments */
+    if (!PyArg_ParseTuple(args, "s#:validate_jpeg_from_buffer", &buffer, &buffer_length))
+        return NULL;
 
-	/* Validate image */
-	validate_jpeg_from_buffer(buffer, buffer_length);
+    /* Validate image */
+    validate_jpeg_from_buffer(buffer, buffer_length);
 
-	/* Create results object */
-	PyObject * results = createResults(Messages, total_errors, total_warnings);
+    /* Create results object */
+    PyObject * results = createResults(Messages, total_errors, total_warnings);
 
-	/* Return result */
-	return results;
+    /* Return result */
+    return results;
 }
 
 /* Internal python methods bindings */
 static PyMethodDef pycheckjpeg_methods[] = {
-	{"validate_jpeg_from_file",  py_validate_jpeg_from_file, METH_VARARGS, validate_jpeg_from_file__doc__},
-	{"validate_jpeg_from_buffer",  py_validate_jpeg_from_buffer, METH_VARARGS, validate_jpeg_from_buffer__doc__},
-	{NULL, NULL}      /* sentinel */
+    {"validate_jpeg_from_file",  py_validate_jpeg_from_file, METH_VARARGS, validate_jpeg_from_file__doc__},
+    {"validate_jpeg_from_buffer",  py_validate_jpeg_from_buffer, METH_VARARGS, validate_jpeg_from_buffer__doc__},
+    {NULL, NULL}      /* sentinel */
 };
 
 /* Internal python module initializer */
@@ -335,7 +335,7 @@ PyMODINIT_FUNC
 initpycheckjpeg(void)
 {
 
-	/* Initialize module */
-	Py_InitModule3("pycheckjpeg", pycheckjpeg_methods,
+    /* Initialize module */
+    Py_InitModule3("pycheckjpeg", pycheckjpeg_methods,
                    pycheckjpeg__doc__);
 }

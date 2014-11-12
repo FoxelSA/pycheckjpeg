@@ -1,7 +1,7 @@
 
 ## Copyright
 
-pycheckjpeg - A python module to check integrity of JPEG files<br />
+pycheckjpeg - Python module to check integrity of JP4/JPEG files<br />
 This program is part of the FOXEL project <[http://foxel.ch](http://foxel.ch)>.
 
 Copyright (c) 2014 FOXEL SA - [http://foxel.ch](http://foxel.ch)<br />

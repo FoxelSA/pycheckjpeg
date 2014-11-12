@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-  pycheckjpeg - A python module to check integrity of JPEG files
+  pycheckjpeg - Python module to check integrity of JP4/JPEG files
 
   Copyright (c) 2014 FOXEL SA - http://foxel.ch
   Please read <http://foxel.ch/license> for more information.
