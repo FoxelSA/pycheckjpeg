@@ -3,9 +3,11 @@
 
 pycheckjpeg can validate a JPEG file from a buffer or a path, it returns error and warning messages if anything is found.
 
+
 ### Documentation
 
 Documentation can be consulted on the [wiki](https://github.com/FoxelSA/pycheckjpeg/wiki).
+
 
 ### Copyright
 
