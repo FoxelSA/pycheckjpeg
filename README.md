@@ -1,7 +1,7 @@
 
 ## pycheckjpeg<br />A python module to check integrity of JPEG files
 
-pycheckjpeg can validate a JPEG file from a buffer or a path, it returns error and warning messages if anything is found.
+pycheckjpeg can validate a JP4/JPEG file from a buffer or a path, it returns error and warning messages if anything is found.
 
 
 ### Documentation
