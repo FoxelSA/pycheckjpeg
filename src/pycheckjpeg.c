@@ -1,7 +1,7 @@
 /*
  * pycheckjpeg - A python module to check integrity of JPEG files
  *
- * Copyright (c) 2013-2014 FOXEL SA - http://foxel.ch
+ * Copyright (c) 2014 FOXEL SA - http://foxel.ch
  * Please read <http://foxel.ch/license> for more information.
  *
  *
