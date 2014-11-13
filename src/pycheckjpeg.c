@@ -133,8 +133,9 @@ output_method (j_common_ptr cinfo)
 /* Function to verify integrity of a JPEG file from buffer */
 void validate_jpeg_from_buffer(unsigned char * in_buffer, int in_length)
 {
-    /* Reset the error counter */
-    total_errors = 0;
+    /* Reset the error and warning counter counter */
+    total_errors   = 0;
+    total_warnings = 0;
 
     /* Scope variables */
     struct jpeg_decompress_struct cinfo = {0};
