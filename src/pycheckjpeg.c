@@ -231,6 +231,18 @@ PyObject * createResults(char * array[2][16], size_t esize, size_t wsize) {
         PyList_SET_ITEM(temp, i, PyString_FromString(Messages[1][i]));
     }
 
+    /* Flush error messages */
+    int x = 0;
+    for( x = 0; x < total_errors; x++ ){
+        free( Messages[ 0 ][ x ] );
+    }
+    total_errors = 0;
+
+    /* Flush warning messages */
+    for( x = 0; x < total_warnings; x++ ){
+        free( Messages[ 1 ][ x ] );
+    }
+
     /* Return result */
     return result;
 }
